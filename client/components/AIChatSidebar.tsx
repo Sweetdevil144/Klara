@@ -51,40 +51,40 @@ export default function AIChatSidebar({
 }: AIChatSidebarProps) {
   const { getToken } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState("");
-  const [selectedModel, setSelectedModel] = useState<AIModel>(AI_MODELS[0]);
+  const [inputMessage, setInputMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<AIModel>(AI_MODELS[0]);
   const [showModelSelector, setShowModelSelector] = useState(false);
-  const [pendingSuggestion, setPendingSuggestion] =
-    useState<NoteChatResponse | null>(null);
+  const [pendingSuggestion, setPendingSuggestion] = useState<NoteChatResponse | null>(null);
 
   const sendMessage = async () => {
-    if (!input.trim() || !note || loading) return;
+    if (!inputMessage.trim() || !note || loading) return;
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: "user",
-      content: input,
+      content: inputMessage,
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    setInput("");
+    setInputMessage("");
     setLoading(true);
+    setPendingSuggestion(null);
 
     try {
       const response = await notesApi.chatWithNote(
         note.id,
         {
-          message: input,
+          message: inputMessage,
           model: selectedModel.id,
           provider: selectedModel.provider,
         },
-        userToken
+        getToken // Pass the getToken function instead of a token string
       );
 
       const aiMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
+        id: Date.now().toString(),
         role: "assistant",
         content: response.message,
         model: selectedModel.name,
@@ -96,13 +96,29 @@ export default function AIChatSidebar({
       setPendingSuggestion(response);
     } catch (error) {
       console.error("Failed to send message:", error);
-      const errorMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: "Sorry, I encountered an error. Please try again.",
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
+
+      // Add specific error message for token issues
+      if (error instanceof Error && (
+        error.message.includes('Unauthorized') || 
+        error.message.includes('401') ||
+        error.message.includes('token')
+      )) {
+        const tokenErrorMessage: ChatMessage = {
+          id: Date.now().toString(),
+          role: "assistant",
+          content: "⚠️ Authentication error. Please refresh the page and try again.",
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, tokenErrorMessage]);
+      } else {
+        const errorMessage: ChatMessage = {
+          id: Date.now().toString(),
+          role: "assistant",
+          content: "❌ Failed to send message. Please try again.",
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+      }
     } finally {
       setLoading(false);
     }
@@ -114,25 +130,14 @@ export default function AIChatSidebar({
     try {
       setLoading(true);
       
-      // Get a fresh token for applying suggestions
-      const freshToken = await getToken();
-      
-      console.log(
-        "Applying suggestion with fresh token:",
-        freshToken ? "Token obtained" : "No token"
-      );
       console.log("Suggestion content:", pendingSuggestion.suggestion);
-
-      if (!freshToken) {
-        throw new Error('Unable to obtain authentication token. Please refresh the page and try again.');
-      }
 
       const updatedNote = await notesApi.applySuggestion(
         note.id,
         {
           newContent: pendingSuggestion.suggestion,
         },
-        freshToken // Use fresh token instead of cached userToken
+        getToken // Pass the getToken function instead of a token string
       );
 
       onNoteUpdate(updatedNote);
@@ -175,15 +180,8 @@ export default function AIChatSidebar({
     setPendingSuggestion(null);
 
     try {
-      // Get a fresh token for retry
-      const freshToken = await getToken();
+      console.log('Retrying last message...');
       
-      console.log('Retrying with fresh token:', freshToken ? 'Token obtained' : 'No token');
-      
-      if (!freshToken) {
-        throw new Error('Unable to obtain authentication token. Please refresh the page and try again.');
-      }
-
       const response = await notesApi.chatWithNote(
         note!.id,
         {
@@ -191,7 +189,7 @@ export default function AIChatSidebar({
           model: selectedModel.id,
           provider: selectedModel.provider,
         },
-        freshToken // Use fresh token instead of cached userToken
+        getToken // Pass the getToken function instead of a token string
       );
 
       const aiMessage: ChatMessage = {
@@ -448,8 +446,8 @@ export default function AIChatSidebar({
         <div className="p-4 border-t border-white">
           <div className="flex space-x-2">
             <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
               placeholder="Ask AI about your note..."
               className="flex-1 border-black text-white placeholder-gray-500"
@@ -457,7 +455,7 @@ export default function AIChatSidebar({
             />
             <Button
               onClick={sendMessage}
-              disabled={loading || !input.trim() || !note}
+              disabled={loading || !inputMessage.trim() || !note}
               className="bg-white text-black hover:bg-gray-100 border border-black"
             >
               <Send size={16} />

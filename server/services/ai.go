@@ -72,6 +72,20 @@ func (ai *AIService) ChatWithAI(userID, clerkID, sessionID, message, modelID, pr
 
 	context := ai.buildContextFromMemories(memories)
 
+	systemPrompt := `You are a direct, professional AI assistant. Follow these rules:
+- NEVER use conversational phrases like "Here's", "Okay", "I understand", "Sure", etc.
+- NEVER include meta-commentary about what you're doing
+- Provide direct, actionable responses
+- Be concise, factual, and focused
+- If providing information, present it clearly without unnecessary preamble
+- If answering questions, give direct answers without conversational padding`
+
+	if context != "" {
+		context = systemPrompt + "\n\nPrevious conversation context:\n" + context
+	} else {
+		context = systemPrompt
+	}
+
 	var response string
 	switch provider {
 	case "openai":
@@ -272,34 +286,38 @@ func (ai *AIService) buildContextFromMemories(memories []models.Memory) string {
 }
 
 func (ai *AIService) buildNoteUpdatePrompt(currentNote string, memories []models.Memory, customPrompt string) string {
-	basePrompt := `You are a focused note-taking assistant that updates notes based on conversation context.
+	basePrompt := `You are a precise note-updating assistant. Your ONLY job is to enhance the existing note content.
 
-STRICT GUIDELINES:
-- ONLY update the note with information directly relevant to the note's topic
-- DO NOT add tangential information, personal opinions, or unrelated content
-- DO NOT include conversational elements, greetings, or meta-commentary
-- DO NOT divert from the note's purpose unless explicitly requested by the user
-- Preserve existing note structure and formatting exactly
-- Maintain factual accuracy and professional tone
+CRITICAL INSTRUCTIONS:
+- NEVER include conversational text like "Here's the updated note", "I understand", "Okay", etc.
+- NEVER replace existing content unless explicitly contradicted by new information
+- ALWAYS preserve the existing structure, formatting, and all current content
+- ADD new information by extending lists, adding sections, or appending relevant details
+- If the user requests a 5th item and there are already 4 items, ADD the 5th item to the existing 4 items
+- If adding to a list, continue the same numbering/bullet format
+- If adding new sections, maintain consistent formatting
+- Return ONLY the enhanced note content with no explanations or commentary
 
-UPDATE RULES:
-1. Review current note and conversation history
-2. Identify ONLY facts, insights, or updates that directly relate to the note's topic
-3. Integrate relevant information while preserving existing content structure
-4. Only remove content if it's factually contradicted by new information
-5. Use clear formatting (bullet points, headers) for readability
-6. Keep content concise and focused on the note's purpose
+CONTENT PRESERVATION RULES:
+1. Keep ALL existing content intact
+2. Add new information in the appropriate location
+3. Maintain original formatting (bullets, numbers, headers, etc.)
+4. If user asks for "add X", append X to existing content
+5. If user asks for "5th item", add it after existing items 1-4
+6. Only remove content if new information directly contradicts old information
 
-CURRENT NOTE:
+CURRENT NOTE CONTENT:
 %s
 
 CONVERSATION CONTEXT:
 %s
 
-TASK: Update the note by incorporating ONLY relevant information from the conversation. Return only the updated note content. Do not add any explanations, commentary, or off-topic content.`
+ENHANCEMENT REQUEST: Based on the conversation, enhance the note by adding relevant information while preserving all existing content. Return only the enhanced note content with no additional text.`
 
 	if customPrompt != "" {
-		basePrompt = customPrompt + "\n\n" + basePrompt
+		basePrompt = fmt.Sprintf(`CUSTOM INSTRUCTION: %s
+
+%s`, customPrompt, basePrompt)
 	}
 
 	conversationHistory := ai.buildContextFromMemories(memories)

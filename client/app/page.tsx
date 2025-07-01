@@ -19,7 +19,9 @@ export default function Home() {
   if (!isLoaded) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="animate-pulse-glow text-white text-xl">Loading...</div>
+        <button className="px-8 py-4 bg-gradient-to-r from-black to-white rounded-full text-white text-xl font-medium shadow-lg hover:from-black hover:to-white transition-all duration-300 animate-pulse-glow">
+          Loading...
+        </button>
       </div>
     );
   }
@@ -44,12 +46,12 @@ export default function Home() {
           {/* Logo/Title */}
           <div className="space-y-4">
             <h1 className="text-6xl md:text-8xl font-bold tracking-tight">
-              <span className="bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-white to-white bg-clip-text text-transparent">
                 Kl
               </span>
               <span className="text-white">ara</span>
             </h1>
-            <p className="text-xl md:text-2xl text-gray-400 max-w-2xl mx-auto">
+            <p className="text-xl md:text-2xl text-white max-w-2xl mx-auto">
               The future of note-taking. Intelligent, contextual, and infinitely
               powerful.
             </p>
@@ -57,39 +59,39 @@ export default function Home() {
 
           {/* Feature highlights */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-16 mb-16">
-            <Card className="bg-gray-900 border-gray-800 p-6 hover:bg-gray-800 transition-all duration-300">
+            <Card className="bg-black border-white p-6 hover:bg-white hover:text-black transition-all duration-300 group">
               <div className="text-center space-y-3">
-                <div className="w-12 h-12 mx-auto bg-gray-800 rounded-lg flex items-center justify-center">
+                <div className="w-12 h-12 mx-auto bg-white rounded-lg flex items-center justify-center group-hover:bg-black">
                   <span className="text-2xl">🧠</span>
                 </div>
-                <h3 className="text-lg font-semibold text-white">AI-Powered</h3>
-                <p className="text-gray-400 text-sm">
+                <h3 className="text-lg font-semibold text-white group-hover:text-black">AI-Powered</h3>
+                <p className="text-white text-sm group-hover:text-black">
                   Intelligent insights and contextual understanding
                 </p>
               </div>
             </Card>
 
-            <Card className="bg-gray-900 border-gray-800 p-6 hover:bg-gray-800 transition-all duration-300">
+            <Card className="bg-black border-white p-6 hover:bg-white hover:text-black transition-all duration-300 group">
               <div className="text-center space-y-3">
-                <div className="w-12 h-12 mx-auto bg-gray-800 rounded-lg flex items-center justify-center">
+                <div className="w-12 h-12 mx-auto bg-white rounded-lg flex items-center justify-center group-hover:bg-black">
                   <span className="text-2xl">⚡</span>
                 </div>
-                <h3 className="text-lg font-semibold text-white">
+                <h3 className="text-lg font-semibold text-white group-hover:text-black">
                   Lightning Fast
                 </h3>
-                <p className="text-gray-400 text-sm">
+                <p className="text-white text-sm group-hover:text-black">
                   Instant search and seamless performance
                 </p>
               </div>
             </Card>
 
-            <Card className="bg-gray-900 border-gray-800 p-6 hover:bg-gray-800 transition-all duration-300">
+            <Card className="bg-black border-white p-6 hover:bg-white hover:text-black transition-all duration-300 group">
               <div className="text-center space-y-3">
-                <div className="w-12 h-12 mx-auto bg-gray-800 rounded-lg flex items-center justify-center">
+                <div className="w-12 h-12 mx-auto bg-white rounded-lg flex items-center justify-center group-hover:bg-black">
                   <span className="text-2xl">🔒</span>
                 </div>
-                <h3 className="text-lg font-semibold text-white">Secure</h3>
-                <p className="text-gray-400 text-sm">
+                <h3 className="text-lg font-semibold text-white group-hover:text-black">Secure</h3>
+                <p className="text-white text-sm group-hover:text-black">
                   Your thoughts, protected and private
                 </p>
               </div>
@@ -101,7 +103,7 @@ export default function Home() {
             <SignUpButton>
               <Button 
                 size="lg" 
-                className="bg-white text-black hover:bg-gray-200 font-semibold px-8 py-3 text-lg animate-pulse-glow"
+                className="bg-white text-black hover:bg-black hover:text-white font-semibold px-8 py-3 text-lg animate-pulse-glow"
               >
                 Get Started
               </Button>
@@ -109,9 +111,8 @@ export default function Home() {
             
             <SignInButton>
               <Button 
-                variant="outline" 
                 size="lg" 
-                className="border-gray-600 text-white hover:bg-gray-900 font-semibold px-8 py-3 text-lg"
+                className="border border-white bg-black text-white hover:bg-white hover:text-black hover:border-black font-semibold px-8 py-3 text-lg shadow-[0_0_10px_rgba(255,255,255,0.3)] hover:shadow-none transition-all duration-300"
               >
                 Sign In
               </Button>
@@ -119,7 +120,7 @@ export default function Home() {
           </div>
 
           {/* Subtle call to action text */}
-          <p className="text-gray-500 text-sm mt-8">
+          <p className="text-white text-sm mt-8">
             Join the future of productivity. Start your journey today.
           </p>
         </div>

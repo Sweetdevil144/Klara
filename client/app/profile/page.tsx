@@ -27,15 +27,15 @@ export default function ProfilePage() {
   const { isLoaded, isSignedIn, getToken } = useAuth()
   const { user } = useUser()
   const router = useRouter()
-  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   
   // API Keys state
-  const [openaiKey, setOpenaiKey] = useState('')
-  const [geminiKey, setGeminiKey] = useState('')
+  const [openaiKey, setOpenaiKey] = useState("")
+  const [geminiKey, setGeminiKey] = useState("")
   const [showOpenaiKey, setShowOpenaiKey] = useState(false)
   const [showGeminiKey, setShowGeminiKey] = useState(false)
 
@@ -55,71 +55,62 @@ export default function ProfilePage() {
     try {
       setLoading(true)
       setError(null)
-      const token = await getToken()
-      if (!token) throw new Error('No auth token')
-      
-      const userProfile = await userApi.getProfile(token)
-      setProfile(userProfile.user)
-    } catch (err) {
-      console.error('Failed to load profile:', err)
-      setError('Failed to load profile')
+      const profileData = await userApi.getProfile(getToken)
+      setProfile(profileData)
+      setOpenaiKey(profileData.openaiKey || "")
+      setGeminiKey(profileData.geminiKey || "")
+    } catch (error) {
+      console.error("Failed to load profile:", error)
+      setError(`Failed to load profile: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setLoading(false)
     }
   }
 
-  const updateAPIKeys = async () => {
+  const handleUpdateAPIKeys = async () => {
     try {
       setSaving(true)
       setError(null)
       setSuccess(null)
       
-      const token = await getToken()
-      if (!token) throw new Error('No auth token')
-
-      const updateData: any = {}
-      if (openaiKey.trim()) updateData.openaiKey = openaiKey.trim()
-      if (geminiKey.trim()) updateData.geminiKey = geminiKey.trim()
-
-      if (Object.keys(updateData).length === 0) {
-        setError('Please enter at least one API key')
-        return
-      }
-
-      await userApi.updateAPIKeys(updateData, token)
-      
-      setSuccess('API keys updated successfully')
-      setOpenaiKey('')
-      setGeminiKey('')
-      
-      // Reload profile to get updated status
-      await loadProfile()
-    } catch (err) {
-      console.error('Failed to update API keys:', err)
-      setError('Failed to update API keys')
+      const updatedProfile = await userApi.updateAPIKeys(
+        {
+          openaiKey: openaiKey || undefined,
+          geminiKey: geminiKey || undefined,
+        },
+        getToken
+      )
+      setProfile(updatedProfile)
+      setSuccess("API keys updated successfully")
+    } catch (error) {
+      console.error("Failed to update API keys:", error)
+      setError(`Failed to update API keys: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setSaving(false)
     }
   }
 
-  const deleteAPIKey = async (keyType: 'openai' | 'gemini') => {
+  const handleDeleteAPIKey = async (keyType: string) => {
     try {
       setSaving(true)
       setError(null)
       setSuccess(null)
       
-      const token = await getToken()
-      if (!token) throw new Error('No auth token')
-
-      await userApi.deleteAPIKey(keyType, token)
+      await userApi.deleteAPIKey(keyType, getToken)
+      
+      // Update local state
+      if (keyType === "openai") {
+        setOpenaiKey("")
+        setProfile((prev: any) => ({ ...prev, openaiKey: null }))
+      } else if (keyType === "gemini") {
+        setGeminiKey("")
+        setProfile((prev: any) => ({ ...prev, geminiKey: null }))
+      }
       
       setSuccess(`${keyType.toUpperCase()} API key deleted successfully`)
-      
-      // Reload profile to get updated status
-      await loadProfile()
-    } catch (err) {
-      console.error('Failed to delete API key:', err)
-      setError('Failed to delete API key')
+    } catch (error) {
+      console.error(`Failed to delete ${keyType} API key:`, error)
+      setError(`Failed to delete ${keyType} API key: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setSaving(false)
     }
@@ -248,7 +239,7 @@ export default function ProfilePage() {
                       </span>
                       {profile?.hasOpenaiKey && (
                         <Button
-                          onClick={() => deleteAPIKey('openai')}
+                          onClick={() => handleDeleteAPIKey('openai')}
                           disabled={saving}
                           variant="outline"
                           size="sm"
@@ -272,7 +263,7 @@ export default function ProfilePage() {
                       </span>
                       {profile?.hasGeminiKey && (
                         <Button
-                          onClick={() => deleteAPIKey('gemini')}
+                          onClick={() => handleDeleteAPIKey('gemini')}
                           disabled={saving}
                           variant="outline"
                           size="sm"
@@ -335,7 +326,7 @@ export default function ProfilePage() {
                 </div>
 
                 <Button
-                  onClick={updateAPIKeys}
+                  onClick={handleUpdateAPIKeys}
                   disabled={saving || (!openaiKey.trim() && !geminiKey.trim())}
                   className="w-full bg-black text-white hover:bg-gray-800"
                 >

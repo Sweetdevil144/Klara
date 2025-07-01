@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { Menu, X, Plus, Search, FileText, Settings, MessageCircle, Trash2, Edit, Bot, User } from 'lucide-react'
-import { notesApi, Note } from '@/lib/api'
+import { notesApi, Note, sessionManager } from '@/lib/api'
 import AIChatSidebar from '@/components/AIChatSidebar'
 
 export default function NotesPage() {
@@ -23,7 +23,8 @@ export default function NotesPage() {
   const [error, setError] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState(false)
   const [editingContent, setEditingContent] = useState(false)
-  const [userToken, setUserToken] = useState<string>('')
+  const [isChatOpen, setIsChatOpen] = useState(false)
+  const [userToken, setUserToken] = useState<string>("")
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -34,98 +35,97 @@ export default function NotesPage() {
   useEffect(() => {
     if (isLoaded && isSignedIn) {
       loadNotes()
+      
+      // Start session extension for active users
+      sessionManager.startSessionExtension(getToken)
+      
+      // Track user activity on page interactions
+      const trackActivity = () => sessionManager.trackUserActivity()
+      
+      // Add activity listeners
+      document.addEventListener('click', trackActivity)
+      document.addEventListener('keydown', trackActivity)
+      document.addEventListener('scroll', trackActivity)
+      document.addEventListener('mousemove', trackActivity)
+      
+      // Cleanup on unmount
+      return () => {
+        sessionManager.stopSessionExtension()
+        document.removeEventListener('click', trackActivity)
+        document.removeEventListener('keydown', trackActivity)
+        document.removeEventListener('scroll', trackActivity)
+        document.removeEventListener('mousemove', trackActivity)
+      }
     }
-  }, [isLoaded, isSignedIn])
+  }, [isLoaded, isSignedIn, getToken])
 
   const loadNotes = async () => {
     try {
       setLoading(true)
       setError(null)
-      const token = await getToken()
-      if (!token) throw new Error('No auth token')
+      const notes = await notesApi.getNotes(getToken)
+      setNotes(notes)
       
-      setUserToken(token)
-      console.log('Fetching notes with token:', token ? 'Token present' : 'No token')
-      const fetchedNotes = await notesApi.getNotes(token)
-      console.log('Fetched notes:', fetchedNotes)
-      const notesArray = Array.isArray(fetchedNotes) ? fetchedNotes : []
-      setNotes(notesArray)
-      
-      if (notesArray.length > 0 && !selectedNote) {
-        setSelectedNote(notesArray[0])
+      if (notes.length > 0 && !selectedNote) {
+        setSelectedNote(notes[0])
       }
-    } catch (err) {
-      console.error('Failed to load notes:', err)
-      setError(`Failed to load notes: ${err instanceof Error ? err.message : 'Unknown error'}`)
+    } catch (error) {
+      console.error("Failed to load notes:", error)
+      setError(`Failed to load notes: ${error instanceof Error ? error.message : 'Unknown error'}`)
       setNotes([])
     } finally {
       setLoading(false)
     }
   }
 
-  const createNote = async () => {
+  const handleCreateNote = async () => {
     try {
-      const token = await getToken()
-      if (!token) throw new Error('No auth token')
-      
-      const newNote = await notesApi.createNote({
-        title: 'Untitled Note',
-        content: ''
-      }, token)
-      
-      setNotes(prev => [newNote, ...prev])
+      const newNote = await notesApi.createNote(
+        {
+          title: "Untitled Note",
+          content: "",
+        },
+        getToken
+      )
+      setNotes((prev) => [newNote, ...prev])
       setSelectedNote(newNote)
-      setEditingTitle(true)
-    } catch (err) {
-      console.error('Failed to create note:', err)
+    } catch (error) {
+      console.error("Failed to create note:", error)
       setError('Failed to create note')
     }
   }
 
-  const updateNote = async (id: string, updates: { title?: string; content?: string }) => {
+  const handleUpdateNote = async (updatedNote: Note) => {
     try {
-      const token = await getToken()
-      if (!token) throw new Error('No auth token')
-      
-      const updatedNote = await notesApi.updateNote(id, updates, token)
-      
-      setNotes(prev => prev.map(note => 
-        note.id === id ? updatedNote : note
-      ))
-      
-      if (selectedNote?.id === id) {
-        setSelectedNote(updatedNote)
-      }
-    } catch (err) {
-      console.error('Failed to update note:', err)
+      const note = await notesApi.updateNote(
+        updatedNote.id,
+        {
+          title: updatedNote.title,
+          content: updatedNote.content,
+        },
+        getToken
+      )
+      setNotes((prev) =>
+        prev.map((n) => (n.id === note.id ? note : n))
+      )
+      setSelectedNote(note)
+    } catch (error) {
+      console.error("Failed to update note:", error)
       setError('Failed to update note')
     }
   }
 
-  const deleteNote = async (id: string) => {
+  const handleDeleteNote = async (noteId: string) => {
     try {
-      const token = await getToken()
-      if (!token) throw new Error('No auth token')
-      
-      await notesApi.deleteNote(id, token)
-      
-      setNotes(prev => prev.filter(note => note.id !== id))
-      
-      if (selectedNote?.id === id) {
-        const remainingNotes = notes.filter(note => note.id !== id)
-        setSelectedNote(remainingNotes.length > 0 ? remainingNotes[0] : null)
+      await notesApi.deleteNote(noteId, getToken)
+      setNotes((prev) => prev.filter((n) => n.id !== noteId))
+      if (selectedNote?.id === noteId) {
+        setSelectedNote(null)
       }
-    } catch (err) {
-      console.error('Failed to delete note:', err)
+    } catch (error) {
+      console.error("Failed to delete note:", error)
       setError('Failed to delete note')
     }
-  }
-
-  const handleNoteUpdate = (updatedNote: Note) => {
-    setNotes(prev => prev.map(note => 
-      note.id === updatedNote.id ? updatedNote : note
-    ))
-    setSelectedNote(updatedNote)
   }
 
   const filteredNotes = (Array.isArray(notes) ? notes : []).filter(note =>
@@ -177,7 +177,7 @@ export default function NotesPage() {
           {/* New Note Button */}
           <div className="p-4 border-b border-white">
             <Button
-              onClick={createNote}
+              onClick={handleCreateNote}
               className="w-full bg-white text-black hover:bg-gray-100 font-medium border border-white"
             >
               <Plus size={16} className="mr-2" />
@@ -225,7 +225,7 @@ export default function NotesPage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
-                          deleteNote(note.id)
+                          handleDeleteNote(note.id)
                         }}
                         className="p-1 text-gray-500 hover:text-white hover:bg-gray-800 rounded transition-colors"
                       >
@@ -314,12 +314,12 @@ export default function NotesPage() {
                       onChange={(e) => setSelectedNote({...selectedNote, title: e.target.value})}
                       onBlur={() => {
                         setEditingTitle(false)
-                        updateNote(selectedNote.id, { title: selectedNote.title })
+                        handleUpdateNote(selectedNote)
                       }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           setEditingTitle(false)
-                          updateNote(selectedNote.id, { title: selectedNote.title })
+                          handleUpdateNote(selectedNote)
                         }
                       }}
                       className="text-3xl font-bold bg-transparent border-none p-0 text-black placeholder-gray-400 focus:ring-0 focus:border-none"
@@ -351,7 +351,7 @@ export default function NotesPage() {
                   <textarea
                     value={selectedNote.content}
                     onChange={(e) => setSelectedNote({...selectedNote, content: e.target.value})}
-                    onBlur={() => updateNote(selectedNote.id, { content: selectedNote.content })}
+                    onBlur={() => handleUpdateNote(selectedNote)}
                     className="w-full h-full min-h-[400px] bg-transparent border-none resize-none text-black placeholder-gray-400 focus:outline-none text-base leading-relaxed p-0"
                     placeholder="Start writing your thoughts..."
                   />
@@ -376,7 +376,7 @@ export default function NotesPage() {
                       variant="ghost" 
                       size="sm" 
                       className="text-black hover:bg-black hover:text-white border border-black"
-                      onClick={() => deleteNote(selectedNote.id)}
+                      onClick={() => handleDeleteNote(selectedNote.id)}
                     >
                       Delete
                     </Button>
@@ -391,7 +391,7 @@ export default function NotesPage() {
                 <h3 className="text-xl font-medium text-gray-600 mb-2">No note selected</h3>
                 <p className="text-gray-500 mb-4">Choose a note from the sidebar or create a new one</p>
                 <Button
-                  onClick={createNote}
+                  onClick={handleCreateNote}
                   className="bg-black text-white hover:bg-gray-800 font-medium border border-black"
                 >
                   <Plus size={16} className="mr-2" />
@@ -408,7 +408,7 @@ export default function NotesPage() {
         isOpen={aiChatOpen}
         onClose={() => setAiChatOpen(false)}
         note={selectedNote}
-        onNoteUpdate={handleNoteUpdate}
+        onNoteUpdate={handleUpdateNote}
         userToken={userToken}
       />
 

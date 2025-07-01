@@ -5,6 +5,7 @@ import (
 	"log"
 	"server/config"
 	"strings"
+	"time"
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/clerk/clerk-sdk-go/v2/jwt"
@@ -54,9 +55,25 @@ func ClerkMiddleware() fiber.Handler {
 			})
 		}
 
-		// Validate token with Clerk JWT verification using publishable key
 		claims, err := jwt.Verify(context.Background(), &jwt.VerifyParams{
-			Token: sessionToken,
+			Token:  sessionToken,
+			Leeway: 30 * time.Second,
+			AuthorizedPartyHandler: func(azp string) bool {
+				if azp == "" {
+					return true
+				}
+
+				allowed := []string{
+					"http://localhost:3000",
+					"http://127.0.0.1:3000",
+				}
+				for _, a := range allowed {
+					if azp == a {
+						return true
+					}
+				}
+				return false
+			},
 		})
 		if err != nil {
 			log.Printf("Token verification failed for token ending in ...%s: %v",
@@ -122,7 +139,24 @@ func OptionalClerkMiddleware() fiber.Handler {
 		sessionToken := tokenParts[1]
 		if sessionToken != "" {
 			claims, err := jwt.Verify(context.Background(), &jwt.VerifyParams{
-				Token: sessionToken,
+				Token:  sessionToken,
+				Leeway: 30 * time.Second,
+				AuthorizedPartyHandler: func(azp string) bool {
+					if azp == "" {
+						return true
+					}
+
+					allowed := []string{
+						"http://localhost:3000",
+						"http://127.0.0.1:3000",
+					}
+					for _, a := range allowed {
+						if azp == a {
+							return true
+						}
+					}
+					return false
+				},
 			})
 			if err == nil && claims.Subject != "" {
 				c.Locals("clerkUserID", claims.Subject)
