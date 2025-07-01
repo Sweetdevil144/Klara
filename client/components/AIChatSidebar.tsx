@@ -47,7 +47,6 @@ export default function AIChatSidebar({
   onClose,
   note,
   onNoteUpdate,
-  userToken,
 }: AIChatSidebarProps) {
   const { getToken } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { useAuth, useUser, UserButton } from '@clerk/nextjs'
@@ -9,19 +10,6 @@ import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { ArrowLeft, Key, Eye, EyeOff, Save, User, Mail } from 'lucide-react'
 import { userApi } from '@/lib/api'
-
-interface UserProfile {
-  id: string
-  clerkId: string
-  email: string
-  username: string
-  firstName: string
-  lastName: string
-  hasOpenaiKey: boolean
-  hasGeminiKey: boolean
-  createdAt: string
-  updatedAt: string
-}
 
 export default function ProfilePage() {
   const { isLoaded, isSignedIn, getToken } = useAuth()

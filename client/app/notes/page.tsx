@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
-import { Menu, X, Plus, Search, FileText, Settings, MessageCircle, Trash2, Edit, Bot, User } from 'lucide-react'
+import { Menu, X, Plus, Search, FileText, MessageCircle, Trash2, Edit, Bot, User } from 'lucide-react'
 import { notesApi, Note, sessionManager } from '@/lib/api'
 import AIChatSidebar from '@/components/AIChatSidebar'
 
@@ -22,9 +22,7 @@ export default function NotesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState(false)
-  const [editingContent, setEditingContent] = useState(false)
-  const [isChatOpen, setIsChatOpen] = useState(false)
-  const [userToken, setUserToken] = useState<string>("")
+  const [userToken] = useState<string>("")
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
