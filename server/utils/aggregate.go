@@ -12,13 +12,9 @@ import (
 func GetUserWithNotes(db *mongo.Database, userID primitive.ObjectID) (*models.UserWithNotes, error) {
 	collection := db.Collection("users")
 
-	pipeline := []bson.M{
-		{
-			"$match": bson.M{
-				"_id": userID,
-			},
-		},
-		{
+	pipeline := bson.A{
+		bson.M{"$match": bson.M{"_id": userID}},
+		bson.M{
 			"$lookup": bson.M{
 				"from":         "notes",
 				"localField":   "noteIds",
@@ -49,13 +45,9 @@ func GetUserWithNotes(db *mongo.Database, userID primitive.ObjectID) (*models.Us
 func GetAllUserNotes(db *mongo.Database, userID primitive.ObjectID) ([]models.Note, error) {
 	collection := db.Collection("users")
 
-	pipeline := []bson.M{
-		{
-			"$match": bson.M{
-				"_id": userID,
-			},
-		},
-		{
+	pipeline := bson.A{
+		bson.M{"$match": bson.M{"_id": userID}},
+		bson.M{
 			"$lookup": bson.M{
 				"from":         "notes",
 				"localField":   "noteIds",
@@ -63,20 +55,9 @@ func GetAllUserNotes(db *mongo.Database, userID primitive.ObjectID) ([]models.No
 				"as":           "notes",
 			},
 		},
-		{
-			"$project": bson.M{
-				"notes": 1,
-				"_id":   0,
-			},
-		},
-		{
-			"$unwind": "$notes",
-		},
-		{
-			"$replaceRoot": bson.M{
-				"newRoot": "$notes",
-			},
-		},
+		bson.M{"$unwind": "$notes"},
+		bson.M{"$replaceRoot": bson.M{"newRoot": "$notes"}},
+		bson.M{"$sort": bson.M{"createdAt": -1}},
 	}
 
 	cursor, err := collection.Aggregate(context.Background(), pipeline)
@@ -93,26 +74,28 @@ func GetAllUserNotes(db *mongo.Database, userID primitive.ObjectID) ([]models.No
 	return notes, nil
 }
 
-func AddNoteToUser(db *mongo.Database, userID primitive.ObjectID, noteID primitive.ObjectID) error {
+func AddNoteToUser(db *mongo.Database, userID, noteID primitive.ObjectID) error {
 	collection := db.Collection("users")
 
-	_, err := collection.UpdateOne(
-		context.Background(),
-		bson.M{"_id": userID},
-		bson.M{"$addToSet": bson.M{"noteIds": noteID}},
-	)
+	filter := bson.M{"_id": userID}
+	update := bson.M{
+		"$addToSet": bson.M{"noteIds": noteID},
+		"$set":      bson.M{"updatedAt": primitive.NewDateTimeFromTime(primitive.DateTime(0).Time())},
+	}
 
+	_, err := collection.UpdateOne(context.Background(), filter, update)
 	return err
 }
 
-func RemoveNoteFromUser(db *mongo.Database, userID primitive.ObjectID, noteID primitive.ObjectID) error {
+func RemoveNoteFromUser(db *mongo.Database, userID, noteID primitive.ObjectID) error {
 	collection := db.Collection("users")
 
-	_, err := collection.UpdateOne(
-		context.Background(),
-		bson.M{"_id": userID},
-		bson.M{"$pull": bson.M{"noteIds": noteID}},
-	)
+	filter := bson.M{"_id": userID}
+	update := bson.M{
+		"$pull": bson.M{"noteIds": noteID},
+		"$set":  bson.M{"updatedAt": primitive.NewDateTimeFromTime(primitive.DateTime(0).Time())},
+	}
 
+	_, err := collection.UpdateOne(context.Background(), filter, update)
 	return err
 }

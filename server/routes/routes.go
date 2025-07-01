@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"server/handler/chat"
 	"server/handler/notes"
 	"server/handler/user"
 	"server/middleware"
@@ -34,6 +35,13 @@ func SetupRoutes(app *fiber.App) {
 	notesRoutes.Get("/:id", notes.GetNote)
 	notesRoutes.Put("/:id", notes.UpdateNote)
 	notesRoutes.Delete("/:id", notes.DeleteNote)
+
+	chatRoutes := protected.Group("/chat")
+	chatRoutes.Post("/", chat.StartChat)
+	chatRoutes.Get("/sessions", chat.GetChatSessions)
+	chatRoutes.Get("/sessions/:sessionId", chat.GetChatHistory)
+	chatRoutes.Delete("/sessions/:sessionId", chat.DeleteChatSession)
+	chatRoutes.Post("/update-note", chat.UpdateNoteWithChat)
 
 	api.Get("/my-notes", middleware.ClerkMiddleware(), notes.GetMyNotes)
 }
