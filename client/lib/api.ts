@@ -73,8 +73,8 @@ export const AI_MODELS: AIModel[] = [
   { id: "gpt-4-turbo", name: "GPT-4 Turbo", provider: "openai", free: false },
   { id: "gpt-4o", name: "GPT-4o", provider: "openai", free: false },
   { id: "gpt-4o-mini", name: "GPT-4o Mini", provider: "openai", free: true },
-
-  // Gemini Models - Updated to correct model names
+  
+  // Gemini Models
   {
     id: "gemini-1.5-flash",
     name: "Gemini 1.5 Flash",
