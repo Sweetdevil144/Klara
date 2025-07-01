@@ -3,16 +3,17 @@ package chat
 import (
 	"context"
 	"fmt"
-	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 	"log"
 	"server/database"
 	"server/middleware"
 	"server/models"
 	"server/services"
 	"time"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var (
@@ -116,6 +117,7 @@ func StartChat(c *fiber.Ctx) error {
 		clerkUserID,
 		chatReq.SessionID,
 		chatReq.Message,
+		getDefaultModelID(chatReq.Model),
 		chatReq.Model,
 		apiKey,
 	)
@@ -149,4 +151,15 @@ func generateSessionTitle(message string) string {
 		return message[:47] + "..."
 	}
 	return message
+}
+
+func getDefaultModelID(model string) string {
+	switch model {
+	case "openai":
+		return "gpt-3.5-turbo"
+	case "gemini":
+		return "gemini-1.5-flash"
+	default:
+		return ""
+	}
 }

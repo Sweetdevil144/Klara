@@ -22,22 +22,29 @@ func CreateNote(c *fiber.Ctx) error {
 	}
 
 	type NoteRequest struct {
-		Title   string `json:"title" binding:"required"`
-		Content string `json:"content" binding:"required"`
+		Title   string `json:"title"`
+		Content string `json:"content"`
 	}
 
 	noteReq := new(NoteRequest)
 	if err := c.BodyParser(noteReq); err != nil {
+		log.Printf("Body parsing error: %v", err)
+		log.Printf("Request body: %s", c.Body())
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": "Invalid request body",
 			"error":   err.Error(),
 		})
 	}
 
-	if noteReq.Title == "" || noteReq.Content == "" {
+	// More flexible validation - allow empty content but require title
+	if noteReq.Title == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Title and content are required",
+			"message": "Title is required",
 		})
+	}
+
+	if noteReq.Content == "" {
+		noteReq.Content = " "
 	}
 
 	db, err := database.Connect()
@@ -51,12 +58,29 @@ func CreateNote(c *fiber.Ctx) error {
 	err = userCollection.FindOne(context.Background(), bson.M{"clerkId": clerkUserID}).Decode(&user)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-				"message": "User profile not found. Please create your profile first.",
-			})
+			log.Printf("User not found, creating profile for clerkID: %s", clerkUserID)
+			user = models.User{
+				ClerkID:   clerkUserID,
+				Email:     "",
+				Username:  "",
+				FirstName: "",
+				LastName:  "",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+				NoteIds:   []primitive.ObjectID{},
+			}
+
+			result, createErr := userCollection.InsertOne(context.Background(), user)
+			if createErr != nil {
+				log.Printf("Failed to create user profile: %v", createErr)
+				return c.Status(500).JSON(fiber.Map{"message": "Failed to create user profile"})
+			}
+			user.ID = result.InsertedID.(primitive.ObjectID)
+			log.Printf("Created user profile with ID: %s", user.ID.Hex())
+		} else {
+			log.Printf("Failed to find user: %v", err)
+			return c.Status(500).JSON(fiber.Map{"message": "Failed to find user"})
 		}
-		log.Printf("Failed to find user: %v", err)
-		return c.Status(500).JSON(fiber.Map{"message": "Failed to find user"})
 	}
 
 	note := models.Note{

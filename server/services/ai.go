@@ -63,7 +63,7 @@ func NewAIService() *AIService {
 	}
 }
 
-func (ai *AIService) ChatWithAI(userID, clerkID, sessionID, message, model, apiKey string) (*models.ChatResponse, error) {
+func (ai *AIService) ChatWithAI(userID, clerkID, sessionID, message, modelID, provider, apiKey string) (*models.ChatResponse, error) {
 	memories, err := ai.memoryService.SearchUserMemories(clerkID, message, 5)
 	if err != nil {
 		fmt.Printf("Warning: Failed to search memories: %v\n", err)
@@ -73,13 +73,13 @@ func (ai *AIService) ChatWithAI(userID, clerkID, sessionID, message, model, apiK
 	context := ai.buildContextFromMemories(memories)
 
 	var response string
-	switch model {
+	switch provider {
 	case "openai":
-		response, err = ai.callOpenAI(message, context, apiKey)
+		response, err = ai.callOpenAI(message, context, modelID, apiKey)
 	case "gemini":
-		response, err = ai.callGemini(message, context, apiKey)
+		response, err = ai.callGemini(message, context, modelID, apiKey)
 	default:
-		return nil, fmt.Errorf("unsupported model: %s", model)
+		return nil, fmt.Errorf("unsupported provider: %s", provider)
 	}
 
 	if err != nil {
@@ -95,7 +95,7 @@ func (ai *AIService) ChatWithAI(userID, clerkID, sessionID, message, model, apiK
 		SessionID: sessionID,
 		Message:   response,
 		Role:      "assistant",
-		Model:     model,
+		Model:     provider,
 		Memories:  memories,
 		CreatedAt: time.Now(),
 	}, nil
@@ -112,9 +112,9 @@ func (ai *AIService) UpdateNoteWithAI(userID, clerkID, sessionID, noteID, noteCo
 	var updatedContent string
 	switch model {
 	case "openai":
-		updatedContent, err = ai.callOpenAI(prompt, "", apiKey)
+		updatedContent, err = ai.callOpenAI(prompt, "", "gpt-3.5-turbo", apiKey)
 	case "gemini":
-		updatedContent, err = ai.callGemini(prompt, "", apiKey)
+		updatedContent, err = ai.callGemini(prompt, "", "gemini-1.5-flash", apiKey)
 	default:
 		return "", fmt.Errorf("unsupported model: %s", model)
 	}
@@ -126,7 +126,7 @@ func (ai *AIService) UpdateNoteWithAI(userID, clerkID, sessionID, noteID, noteCo
 	return updatedContent, nil
 }
 
-func (ai *AIService) callOpenAI(message, context, apiKey string) (string, error) {
+func (ai *AIService) callOpenAI(message, context, modelID, apiKey string) (string, error) {
 	url := "https://api.openai.com/v1/chat/completions"
 
 	messages := []OpenAIMessage{}
@@ -144,7 +144,7 @@ func (ai *AIService) callOpenAI(message, context, apiKey string) (string, error)
 	})
 
 	request := OpenAIRequest{
-		Model:       "gpt-3.5-turbo",
+		Model:       modelID,
 		Messages:    messages,
 		MaxTokens:   1000,
 		Temperature: 0.7,
@@ -190,8 +190,8 @@ func (ai *AIService) callOpenAI(message, context, apiKey string) (string, error)
 	return openAIResp.Choices[0].Message.Content, nil
 }
 
-func (ai *AIService) callGemini(message, context, apiKey string) (string, error) {
-	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=%s", apiKey)
+func (ai *AIService) callGemini(message, context, modelID, apiKey string) (string, error) {
+	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", modelID, apiKey)
 
 	contents := []GeminiContent{}
 
@@ -312,10 +312,10 @@ func (ai *AIService) ValidateAPIKey(model, apiKey string) error {
 
 	switch model {
 	case "openai":
-		_, err := ai.callOpenAI(testMessage, "", apiKey)
+		_, err := ai.callOpenAI(testMessage, "", model, apiKey)
 		return err
 	default:
-		_, err := ai.callGemini(testMessage, "", apiKey)
+		_, err := ai.callGemini(testMessage, "", model, apiKey)
 		return err
 	}
 }

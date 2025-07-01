@@ -16,7 +16,25 @@ func SetupRoutes(app *fiber.App) {
 	public.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"status":  "ok",
-			"message": "AI Notes App API is running",
+			"message": "Klara API is running",
+		})
+	})
+
+	public.Get("/debug/auth", middleware.OptionalClerkMiddleware(), func(c *fiber.Ctx) error {
+		userID, err := middleware.GetClerkUserIDFromContext(c)
+		authHeader := c.Get("Authorization")
+
+		return c.JSON(fiber.Map{
+			"authenticated": err == nil,
+			"userID":        userID,
+			"hasAuthHeader": authHeader != "",
+			"authHeader":    authHeader,
+			"error": func() string {
+				if err != nil {
+					return err.Error()
+				}
+				return ""
+			}(),
 		})
 	})
 
@@ -36,12 +54,13 @@ func SetupRoutes(app *fiber.App) {
 	notesRoutes.Put("/:id", notes.UpdateNote)
 	notesRoutes.Delete("/:id", notes.DeleteNote)
 
+	notesRoutes.Post("/:id/chat", chat.ChatWithNote)
+	notesRoutes.Post("/:id/apply-suggestion", notes.ApplySuggestion)
+
 	chatRoutes := protected.Group("/chat")
 	chatRoutes.Post("/", chat.StartChat)
 	chatRoutes.Get("/sessions", chat.GetChatSessions)
 	chatRoutes.Get("/sessions/:sessionId", chat.GetChatHistory)
 	chatRoutes.Delete("/sessions/:sessionId", chat.DeleteChatSession)
 	chatRoutes.Post("/update-note", chat.UpdateNoteWithChat)
-
-	api.Get("/my-notes", middleware.ClerkMiddleware(), notes.GetMyNotes)
 }

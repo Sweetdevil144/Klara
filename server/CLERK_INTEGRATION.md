@@ -299,13 +299,15 @@ Response:
 
 The system automatically manages conversational memory using Mem0:
 
-### How Memory Works:
+### How Memory Works
+
 1. **Automatic Storage**: Every chat message is stored as memory
 2. **Context Retrieval**: Relevant memories are retrieved for each new message
 3. **Smart Filtering**: Memories are filtered and ranked by relevance
 4. **Session Tracking**: Memories are linked to chat sessions for better organization
 
-### Memory Features:
+### Memory Features
+
 - **User-specific**: Each user's memories are isolated
 - **Session-aware**: Memories can be grouped by chat sessions
 - **Searchable**: Smart semantic search for relevant context
@@ -352,11 +354,11 @@ function ChatInterface() {
         model
       }),
     });
-    
+
     const data = await response.json();
     if (response.ok) {
       setSessionId(data.data.sessionId);
-      setMessages(prev => [...prev, 
+      setMessages(prev => [...prev,
         { role: 'user', content: message },
         { role: 'assistant', content: data.data.message }
       ]);
@@ -438,7 +440,7 @@ function NotesManager() {
 ### 5. **🤖 AI-Powered Features**
 
 - **Memory-Enhanced Conversations**: Context-aware AI responses
-- **Smart Note Updates**: AI analyzes chat history and updates notes intelligently  
+- **Smart Note Updates**: AI analyzes chat history and updates notes intelligently
 - **Multi-Model Support**: OpenAI and Gemini integration
 - **Fine-Tuned Prompts**: Specialized prompts for note updating tasks
 
@@ -491,27 +493,31 @@ Common HTTP status codes:
 
 ## 🚀 Workflow Examples
 
-### Typical AI Note-Taking Workflow:
+### Typical AI Note-Taking Workflow
 
-1. **Start Conversation**: 
+1. **Start Conversation**:
+
    ```http
    POST /api/v1/chat
    { "message": "Let's discuss React hooks", "model": "openai" }
    ```
 
 2. **Continue Discussion**:
+
    ```http
-   POST /api/v1/chat  
+   POST /api/v1/chat
    { "sessionId": "existing-id", "message": "What about useEffect?", "model": "openai" }
    ```
 
 3. **Update Notes with Insights**:
+
    ```http
    POST /api/v1/chat/update-note
    { "noteId": "my-react-notes", "sessionId": "chat-id", "model": "openai" }
    ```
 
 4. **Review Updated Notes**:
+
    ```http
    GET /api/v1/notes/my-react-notes
    ```

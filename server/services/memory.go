@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
+	"server/config"
 	"server/models"
 	"time"
 )
@@ -18,7 +18,7 @@ type MemoryService struct {
 }
 
 func NewMemoryService() *MemoryService {
-	apiKey := os.Getenv("MEM0_API_KEY")
+	apiKey := config.Config("MEM0_API_KEY")
 	if apiKey == "" {
 		panic("MEM0_API_KEY environment variable is required")
 	}
