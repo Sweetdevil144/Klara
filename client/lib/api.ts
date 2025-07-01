@@ -71,6 +71,7 @@ export const AI_MODELS: AIModel[] = [
   // Gemini Models - Updated to correct model names
   { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', provider: 'gemini', free: true },
   { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', provider: 'gemini', free: false },
+  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', provider: 'gemini', free: true },
 ]
 
 class ApiError extends Error {
