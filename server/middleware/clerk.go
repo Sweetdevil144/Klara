@@ -59,21 +59,7 @@ func ClerkMiddleware() fiber.Handler {
 			Token:  sessionToken,
 			Leeway: 30 * time.Second,
 			AuthorizedPartyHandler: func(azp string) bool {
-				if azp == "" {
-					return true
-				}
-
-				allowed := []string{
-					"http://localhost:3000",
-					"http://127.0.0.1:3000",
-					"https://klara-ai.vercel.app/",
-				}
-				for _, a := range allowed {
-					if azp == a {
-						return true
-					}
-				}
-				return false
+				return true
 			},
 		})
 		if err != nil {
@@ -143,21 +129,7 @@ func OptionalClerkMiddleware() fiber.Handler {
 				Token:  sessionToken,
 				Leeway: 30 * time.Second,
 				AuthorizedPartyHandler: func(azp string) bool {
-					if azp == "" {
-						return true
-					}
-
-					allowed := []string{
-						"http://localhost:3000",
-						"http://127.0.0.1:3000",
-						"https://klara-ai.vercel.app/",
-					}
-					for _, a := range allowed {
-						if azp == a {
-							return true
-						}
-					}
-					return false
+					return true
 				},
 			})
 			if err == nil && claims.Subject != "" {
