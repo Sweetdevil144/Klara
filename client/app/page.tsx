@@ -3,6 +3,7 @@
 import { SignInButton, SignUpButton, useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -16,7 +17,7 @@ export default function Home() {
     }
   }, [isLoaded, isSignedIn, router]);
 
-  if (!isLoaded) {
+  if (!isLoaded || isSignedIn) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <button className="px-8 py-4 bg-gradient-to-r from-black to-white rounded-full text-white text-xl font-medium shadow-lg hover:from-black hover:to-white transition-all duration-300 animate-pulse-glow">
@@ -45,6 +46,15 @@ export default function Home() {
         <div className="text-center space-y-8 max-w-4xl mx-auto animate-fade-in-up">
           {/* Logo/Title */}
           <div className="space-y-4">
+            <div className="flex items-center justify-center gap-4 m-4">
+              <Image
+                src="/klara.png"
+                alt="Klara Logo"
+                width={80}
+                height={80}
+                className="rounded-lg"
+              />
+            </div>
             <h1 className="text-6xl md:text-8xl font-bold tracking-tight">
               <span className="bg-gradient-to-r from-white to-white bg-clip-text text-transparent">
                 Kl
