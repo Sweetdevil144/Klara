@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/clerk/clerk-sdk-go/v2 v2.3.1
-	github.com/gofiber/fiber/v2 v2.52.8
+	github.com/gofiber/fiber/v2 v2.52.11
 	github.com/sashabaranov/go-openai v1.40.3
 	golang.org/x/crypto v0.45.0
 	google.golang.org/genai v1.13.0
